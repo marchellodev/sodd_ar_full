@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">SODD AR APP</string>
+
+    <string name="title_activity_fullscreen">FullscreenActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+
+    <string name="directions_base_url">https://maps.googleapis.com/</string>
+
+    <string name="start">РОЗПОЧАТИ</string>
+
+
+</resources>
