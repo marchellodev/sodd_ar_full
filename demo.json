@@ -1,0 +1,49 @@
+[
+  {
+    "distance": {
+      "text": "0.7 km",
+      "value": 715
+    },
+    "duration": {
+      "text": "2 mins",
+      "value": 104
+    },
+    "end_location": {
+      "lat": 51.62786,
+      "lng": 24.971407
+    },
+    "html_instructions": "Head \u003cb\u003eeast\u003c/b\u003e on \u003cb\u003eТ0311\u003c/b\u003e toward \u003cb\u003eвул. 1-го Травня\u003c/b\u003e/\u003cwbr/\u003e\u003cb\u003eмайдан Незалежності\u003c/b\u003e",
+    "polyline": {
+      "points": "e`bzHkmjwCCUCQCWCo@U{BOsAE[E]Iq@Mu@CMUgBACO{@_@{BQaAMm@Mm@O_@QYKUQYo@cAQYWa@[i@OUKUMUIWIYKi@Im@Ms@EYC]Gw@OkBO{B"
+    },
+    "start_location": {
+      "lat": 51.62515,
+      "lng": 24.962297
+    },
+    "travel_mode": "DRIVING"
+  },
+  {
+    "distance": {
+      "text": "0.4 km",
+      "value": 362
+    },
+    "duration": {
+      "text": "1 min",
+      "value": 83
+    },
+    "end_location": {
+      "lat": 51.62624,
+      "lng": 24.973217
+    },
+    "html_instructions": "Turn \u003cb\u003eright\u003c/b\u003e onto \u003cb\u003eвул. Чкалова\u003c/b\u003e",
+    "maneuver": "turn-right",
+    "polyline": {
+      "points": "cqbzHiflwCB?jDm@hASb@I\\Gj@Gl@IHC?A@?@C@A@C?C@C?G?GAg@Ai@E_@CYAEGIGMCKAICKAE?CACAAECC?k@B"
+    },
+    "start_location": {
+      "lat": 51.62786,
+      "lng": 24.971407
+    },
+    "travel_mode": "DRIVING"
+  }
+]

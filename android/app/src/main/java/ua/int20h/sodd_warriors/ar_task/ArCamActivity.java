@@ -7,18 +7,18 @@ import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 
 import com.beyondar.android.util.location.BeyondarLocationManager;
 import com.beyondar.android.world.GeoObject;
@@ -29,24 +29,16 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.Gson;
 import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import butterknife.BindView;
 import butterknife.ButterKnife;
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import io.flutter.embedding.android.FlutterFragment;
 import ua.int20h.sodd_warriors.ar_task.ar.ArFragmentSupport;
-import ua.int20h.sodd_warriors.ar_task.network.DirectionsResponse;
-import ua.int20h.sodd_warriors.ar_task.network.RetrofitInterface;
 import ua.int20h.sodd_warriors.ar_task.network.model.Step;
 import ua.int20h.sodd_warriors.ar_task.utils.LocationCalc;
 
@@ -58,10 +50,8 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     private final static String TAG = "ArCamActivity";
-    @BindView(R.id.ar_dir_distance)
-    TextView dirDistance;
-    @BindView(R.id.ar_dir_time)
-    TextView dirTime;
+
+
     private String srcLatLng;
     private String destLatLng;
     private Step[] steps;
@@ -74,12 +64,64 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
 
     private Intent intent;
 
+
+    // Define a tag String to represent the FlutterFragment within this
+    // Activity's FragmentManager. This value can be whatever you'd like.
+    private static final String TAG_FLUTTER_FRAGMENT = "flutter_fragment";
+
+    // Declare a local variable to reference the FlutterFragment so that you
+    // can forward calls to it later.
+    private FlutterFragment flutterFragment;
+
+
     public static Drawable setTint(Drawable d, int color) {
         Drawable wrappedDrawable = DrawableCompat.wrap(d);
         DrawableCompat.setTint(wrappedDrawable, color);
         return wrappedDrawable;
     }
 
+    @Override
+    public void onPostResume() {
+        super.onPostResume();
+        flutterFragment.onPostResume();
+    }
+
+    @Override
+    protected void onNewIntent(@NonNull Intent intent) {
+        super.onNewIntent(intent);
+        flutterFragment.onNewIntent(intent);
+    }
+
+    @Override
+    public void onBackPressed() {
+        flutterFragment.onBackPressed();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
+        flutterFragment.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+        );
+    }
+
+    @Override
+    public void onUserLeaveHint() {
+        flutterFragment.onUserLeaveHint();
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        flutterFragment.onTrimMemory(level);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,7 +130,54 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
 
         Set_googleApiClient(); //Sets the GoogleApiClient
 
-        //Configure_AR(); //Configure AR Environment
+        // Get a reference to the Activity's FragmentManager to add a new
+        // FlutterFragment, or find an existing one.
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
+
+        // Attempt to find an existing FlutterFragment,
+        // in case this is not the first time that onCreate() was run.
+        flutterFragment = (FlutterFragment) fragmentManager
+                .findFragmentByTag(TAG_FLUTTER_FRAGMENT);
+
+        // Create and attach a FlutterFragment if one does not exist.
+        if (flutterFragment == null) {
+
+            flutterFragment = FlutterFragment.withCachedEngine("my_engine_id").build();
+
+//            Bundle b = new Bundle();
+//            b.putString("test", "test");
+//            flutterFragment.setArguments(b);
+            //            flutterFragment = new FlutterFragment();
+
+
+//            MethodChannel channel = new MethodChannel(flutterFragment);
+//            channel.invokeMethod("foo", arguments, new MethodChannel.Result() {
+//                @Override
+//                public void success(Object o) {
+//                    // this will be called with o = "some string"
+//                }
+//
+//                @Override
+//                public void error(String s, String s1, Object o) {}
+//
+//                @Override
+//                public void notImplemented() {}
+//            });
+
+            fragmentManager
+                    .beginTransaction()
+                    .add(
+                            R.id.fl_fragment,
+                            flutterFragment,
+                            TAG_FLUTTER_FRAGMENT
+                    )
+                    .commit();
+        }
+
+//        BlurBehindLayout bb = findViewById(R.id.blurBehindLayout);
+//        bb.setViewBehind(findViewById(R.id.ar_cam_fragment));
+
 
 //        Directions_call();
     }
@@ -162,18 +251,20 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
             }
         }
 
+        Log.d(TAG, "DEBUG POLYLINES: " + polylineLatLng);
+
         int temp_polycount = 0;
         int temp_inter_polycount = 0;
 
         //TODO The Given below is for rendering all the LatLng in THe polylines , which is more accurate
         for (int j = 0; j < polylineLatLng.size(); j++) {
             for (int k = 0; k < polylineLatLng.get(j).size(); k++) {
-                GeoObject polyGeoObj = new GeoObject(1000 + temp_polycount++);
+//                GeoObject polyGeoObj = new GeoObject(1000 + temp_polycount++);
 
-                polyGeoObj.setGeoPosition(polylineLatLng.get(j).get(k).latitude,
-                        polylineLatLng.get(j).get(k).longitude);
-                polyGeoObj.setImageResource(R.drawable.ar_sphere_150x);
-                polyGeoObj.setName("arObj" + j + k);
+//                polyGeoObj.setGeoPosition(polylineLatLng.get(j).get(k).latitude,
+//                        polylineLatLng.get(j).get(k).longitude);
+//                polyGeoObj.setImageResource(R.drawable.ar_sphere_150x);
+//                polyGeoObj.setName("arObj" + j + k);
 
                 /*
                 To fill the gaps between the Poly objects as AR Objects in the AR View , add some more
@@ -253,7 +344,7 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
                 }
 
                 //Add PolyObjects as ArObjects to Augmented Reality World
-                world.addBeyondarObject(polyGeoObj);
+//                world.addBeyondarObject(polyGeoObj);
                 Log.d(TAG, "\n\n");
             }
         }
@@ -269,63 +360,67 @@ public class ArCamActivity extends FragmentActivity implements GoogleApiClient.C
 //            srcDestText.setText(intent.getStringExtra("SRC")+" -> "+intent.getStringExtra("DEST"));
             srcLatLng = intent.getStringExtra("SRCLATLNG");
             destLatLng = intent.getStringExtra("DESTLATLNG");
+            steps = (Step[]) new Gson().fromJson(intent.getStringExtra("steps"), Step[].class);
 
             Directions_call(); //HTTP Google Directions API Call
         }
     }
 
     private void Directions_call() {
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+//        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+//        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+//        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+//
+//        Retrofit retrofit = new Retrofit.Builder()
+//                .baseUrl(getResources().getString(R.string.directions_base_url))
+//                .client(client)
+//                .addConverterFactory(GsonConverterFactory.create())
+//                .build();
+//
+//        RetrofitInterface apiService =
+//                retrofit.create(RetrofitInterface.class);
+//
+//        final Call<DirectionsResponse> call = apiService.getDirections(srcLatLng, destLatLng,
+//                getResources().getString(R.string.google_maps_key), "walking");
+//
+//        Log.d(TAG, "Directions_call: srclat lng:" + srcLatLng + "\n" + "destLatlng:" + destLatLng);
+//
+//        call.enqueue(new Callback<DirectionsResponse>() {
+//            @Override
+//            public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
+//
+//                DirectionsResponse directionsResponse = response.body();
+//                int step_array_size = directionsResponse.getRoutes().get(0).getLegs().get(0).getSteps().size();
+//
+////                dirDistance.setVisibility(View.VISIBLE);
+////                dirDistance.setText(directionsResponse.getRoutes().get(0).getLegs().get(0)
+////                        .getDistance().getText());
+////
+////                dirTime.setVisibility(View.VISIBLE);
+////                dirTime.setText(directionsResponse.getRoutes().get(0).getLegs().get(0)
+////                        .getDuration().getText());
+//
+//                steps = new Step[step_array_size];
+//
+//                for (int i = 0; i < step_array_size; i++) {
+//                    steps[i] = directionsResponse.getRoutes().get(0).getLegs().get(0).getSteps().get(i);
+//                    Log.d(TAG, "onResponse: STEP " + i + ": " + steps[i].getEndLocation().getLat()
+//                            + " " + steps[i].getEndLocation().getLng());
+//                }
+//
+//                Log.d(TAG, "STEPSSSSSSSSSSSSSS");
+//                Log.d(TAG, Arrays.toString(steps));
+        Configure_AR();
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(getResources().getString(R.string.directions_base_url))
-                .client(client)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        RetrofitInterface apiService =
-                retrofit.create(RetrofitInterface.class);
-
-        final Call<DirectionsResponse> call = apiService.getDirections(srcLatLng, destLatLng,
-                getResources().getString(R.string.google_maps_key));
-
-        Log.d(TAG, "Directions_call: srclat lng:" + srcLatLng + "\n" + "destLatlng:" + destLatLng);
-
-        call.enqueue(new Callback<DirectionsResponse>() {
-            @Override
-            public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
-
-                DirectionsResponse directionsResponse = response.body();
-                int step_array_size = directionsResponse.getRoutes().get(0).getLegs().get(0).getSteps().size();
-
-                dirDistance.setVisibility(View.VISIBLE);
-                dirDistance.setText(directionsResponse.getRoutes().get(0).getLegs().get(0)
-                        .getDistance().getText());
-
-                dirTime.setVisibility(View.VISIBLE);
-                dirTime.setText(directionsResponse.getRoutes().get(0).getLegs().get(0)
-                        .getDuration().getText());
-
-                steps = new Step[step_array_size];
-
-                for (int i = 0; i < step_array_size; i++) {
-                    steps[i] = directionsResponse.getRoutes().get(0).getLegs().get(0).getSteps().get(i);
-                    Log.d(TAG, "onResponse: STEP " + i + ": " + steps[i].getEndLocation().getLat()
-                            + " " + steps[i].getEndLocation().getLng());
-                }
-                Configure_AR();
-
-            }
-
-            @Override
-            public void onFailure(Call<DirectionsResponse> call, Throwable t) {
-
-                Log.d(TAG, "onFailure: FAIL" + t.getMessage());
-                new AlertDialog.Builder(getApplicationContext()).setMessage("Fetch Failed").show();
-            }
-        });
+//            }
+//
+//            @Override
+//            public void onFailure(Call<DirectionsResponse> call, Throwable t) {
+//
+//                Log.d(TAG, "onFailure: FAIL" + t.getMessage());
+//                new AlertDialog.Builder(getApplicationContext()).setMessage("Fetch Failed").show();
+//            }
+//        });
     }
 
     @Override

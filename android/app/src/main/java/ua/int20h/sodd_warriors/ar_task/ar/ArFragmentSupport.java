@@ -4,16 +4,19 @@ package ua.int20h.sodd_warriors.ar_task.ar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.hardware.Camera;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout.LayoutParams;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -146,6 +149,40 @@ public class ArFragmentSupport extends Fragment implements FpsUpdatable, OnClick
         return new ArBeyondarGLSurfaceView(getActivity());
     }
 
+    private int getCameraDisplayOrientation() {
+        int rotation = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE))
+                .getDefaultDisplay().getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+
+        degrees = (degrees + 45) / 90 * 90;
+        rotation = (degrees + 90) % 360;
+
+        //My hack forcing tab to landscare and phone to portrait
+        boolean isTablet =  ((getContext().getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE);
+
+        if (isTablet){
+            rotation=0;
+        }else{
+            rotation = 90;
+        }
+
+        return rotation;
+    }
+
     /**
      * Override this method to personalize the
      * {@link com.beyondar.android.view.CameraView CameraView} that will be
@@ -154,8 +191,14 @@ public class ArFragmentSupport extends Fragment implements FpsUpdatable, OnClick
      * @return
      */
     protected ArSurfaceView createCameraView() {
+//        Camera.Parameters parameters = mCamera.getParameters();
+
         mCamera = getCameraInstance();
+        int orientation = getCameraDisplayOrientation();
+        mCamera.setDisplayOrientation(orientation);
+
         param = mCamera.getParameters();
+
 
         if (param.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE))
             param.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);

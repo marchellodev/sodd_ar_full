@@ -14,7 +14,9 @@ public interface RetrofitInterface {
     Call<DirectionsResponse> getDirections(
             @Query("origin") String origin,
             @Query("destination") String destination,
-            @Query("key") String key
+            @Query("key") String key,
+            @Query("mode") String mode
+
     );
 
     @GET("/maps/api/place/nearbysearch/json?")
