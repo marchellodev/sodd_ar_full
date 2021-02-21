@@ -59,6 +59,7 @@ class _CamStuffState extends State<CamStuff> {
   // }
 
   void getData() async {
+    WidgetsFlutterBinding.ensureInitialized();
     await Future.delayed(Duration(milliseconds: 400));
 
     // print(await platform.)
